@@ -1,0 +1,166 @@
+//PositiveROI = 0;
+//NegativeROI = 0;
+//ProportionPositive = 0;
+//ProportionNegative = 0;
+TotalCountedGrid = 0;
+
+Dialog.create("Ratiometric Analysis");
+Dialog.addNumber("grid dimension", 1);
+Dialog.addNumber("threshold", 10);
+//Dialog.addNumber("minimum external null box area", 0);
+Dialog.addCheckbox("selection already added to ROI manager", false) ;
+Dialog.addCheckbox("clear outside of selection", false);
+Dialog.addCheckbox("mark ratios", false);
+Dialog.addCheckbox("remove null boxes outside of selection", false);
+Dialog.addCheckbox("fill negative boxes", false);
+Dialog.addNumber("marker ratio division left", 0.5);
+Dialog.addNumber("marker ratio division center", 1);
+Dialog.addNumber("marker ratio division right", 2);
+Dialog.show();
+
+entergriddimension = Dialog.getNumber();
+enterthreshold = Dialog.getNumber();
+//enterminimumnegativebox = Dialog.getNumber();
+initialroientered = Dialog.getCheckbox();
+clearoutside = Dialog.getCheckbox();
+fillpositiveboxes = Dialog.getCheckbox();
+removenullboxesoutsideselection = Dialog.getCheckbox();
+fillnegativeboxes = Dialog.getCheckbox();
+enterratiodivisionleft = Dialog.getNumber();
+enterratiodivisionmiddle = Dialog.getNumber();
+enterratiodivisionright = Dialog.getNumber();
+
+
+
+tempgreen = 0;
+tempred = 0;
+tempratio =0;
+
+getSelectionBounds(x, y, width, height);
+
+if (initialroientered==0)
+{
+	roiManager("Add");
+}
+
+if (clearoutside ==1)
+{
+	roiManager("select", 0);
+	run("Clear Outside");
+}
+
+numrows = width/entergriddimension;
+numcolumns = height/entergriddimension;
+
+for(i = 0; i < numrows; i++){
+for(j = 0; j < numcolumns; j++){
+	NextRow = i * (entergriddimension);
+	NextColumn = j * (entergriddimension);
+	makeRectangle(x + NextRow, y + NextColumn, entergriddimension, entergriddimension);
+	roiManager("Add");
+}
+}
+
+setColor(80,0,80);
+print("X Y Green Red Red/Green");
+
+n = roiManager("count");
+for(i=1;i<n;i++){
+	run("Previous Slice [<]");
+	roiManager("select", i);
+	getSelectionBounds(x, y, width, height); 
+	x = x;
+	y = y;
+	getRawStatistics(area, mean, min, max, std, histogram);
+	tempgreen = mean;
+	run("Next Slice [>]");
+	getRawStatistics(area, mean, min, max, std, histogram);
+	tempred = mean;	
+if (tempgreen<=enterthreshold)
+{
+run("Clear", "slice");
+}
+
+	if (tempgreen>enterthreshold)
+		{
+			tempratio = tempred/tempgreen;
+			print(x,y,tempgreen,tempred,tempratio);
+			//print(y);
+			//print(tempgreen);
+			//print(tempred);
+			//print(tempratio);
+			//setResult("Green Value",nResults, tempgreen);
+			//setResult("Red Value",0, tempred);
+			//setResult("Red:Green ratio",0, tempratio);
+			//setResult("X",0, x);
+			//setResult("Y",0, y);
+			PositiveROI +=1;
+			if (fillpositiveboxes==1)
+			{
+				if (tempratio >enterratiodivisionmiddle)
+				 {
+					setColor(192);
+					fill();
+					}
+			if (tempratio >enterratiodivisionright)
+				 {
+					setColor(255);
+					fill();
+					}
+			if (tempratio <=enterratiodivisionmiddle)
+				{
+					setColor(128);
+					fill();
+					}	
+			if (tempratio < enterratiodivisionleft)
+					setColor(64);
+					fill();
+					}				
+
+
+}						
+}
+
+			
+
+
+//setColor(0,255,0);
+
+//for(i=1;i<n;i++){
+//	if (removenullboxesoutsideselection==false)
+//	{
+//		roiManager("select", i);
+//	}
+//	if (removenullboxesoutsideselection==true)
+//	{
+//		roiManager("select", newArray(i,0));
+//		roiManager("AND");
+//	}
+//	getRawStatistics(area, mean, min, max, std, histogram);
+//		if (max<enterthreshold) 
+//		if (area>enterminimumnegativebox)
+//		{
+//			NegativeROI +=1;
+//				if (fillnegativeboxes==true)
+//				{
+//					roiManager("select", i);
+//					fill();
+//}
+//}
+//}
+print("Analysis Finished")
+//TotalCountedGrid = PositiveROI + NegativeROI;
+//ProportionPositive = PositiveROI/TotalCountedGrid;
+//ProportionNegative = NegativeROI/TotalCountedGrid;
+
+//print("Positive Grid Spaces", PositiveROI);
+//print("Negative Grid Spaces", NegativeROI);
+//print("Positive and Negative Grid Spaces", TotalCountedGrid);
+//print("Proportion Positive", ProportionPositive);
+//print("Proportion Negative", ProportionNegative);
+	
+//setResult("+ Spaces", 0, PositiveROI);
+//setResult("- Spaces",0, NegativeROI);
+//setResult("Counted Spaces",0, TotalCountedGrid);
+//setResult("PROP Positive",0, ProportionPositive);
+//setResult("PROP Negative", 0,ProportionNegative);
